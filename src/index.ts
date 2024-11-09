@@ -50,20 +50,41 @@ export async function runSimulation(
   block_height: number,
   txs: (StacksTransactionWire | SimulationEval)[]
 ) {
-  const body = Buffer.concat([
-    Buffer.from('sim-v1'),
-    Buffer.alloc(8),
-    Buffer.from(
-      block_hash.startsWith('0x') ? block_hash.substring(2) : block_hash,
-      'hex'
-    ),
-    ...txs
-      .map((t) => {
-        return 'contract_id' in t && 'code' in t ? runEval(t) : runTx(t);
-      })
-      .map((t) => serializeCVBytes(t)),
-  ]);
-  body.writeBigUInt64BE(BigInt(block_height), 6);
+  // Convert 'sim-v1' to Uint8Array
+  const header = new TextEncoder().encode('sim-v1');
+  // Create 8 bytes for block height
+  const heightBytes = new Uint8Array(8);
+  // Convert block height to bytes
+  const view = new DataView(heightBytes.buffer);
+  view.setBigUint64(0, BigInt(block_height), false); // false for big-endian
+
+  // Convert block hash to bytes
+  const hashHex = block_hash.startsWith('0x') ? block_hash.substring(2) : block_hash;
+  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  const hashBytes = new Uint8Array(hashHex.match(/.{1,2}/g)!.map(byte => Number.parseInt(byte, 16)));
+
+  // Convert transactions to bytes
+  const txBytes = txs
+    .map((t) => 'contract_id' in t && 'code' in t ? runEval(t) : runTx(t))
+    .map((t) => serializeCVBytes(t));
+
+  // Combine all byte arrays
+  const totalLength = header.length + heightBytes.length + hashBytes.length + 
+    txBytes.reduce((acc, curr) => acc + curr.length, 0);
+  const body = new Uint8Array(totalLength);
+
+  let offset = 0;
+  body.set(header, offset);
+  offset += header.length;
+  body.set(heightBytes, offset);
+  offset += heightBytes.length;
+  body.set(hashBytes, offset);
+  offset += hashBytes.length;
+  for (const tx of txBytes) {
+    body.set(tx, offset);
+    offset += tx.length;
+  }
+
   const rs = await fetch(apiEndpoint, {
     method: 'POST',
     body,
@@ -72,7 +93,6 @@ export async function runSimulation(
     if (!response.startsWith('{')) {
       throw new Error(`failed to submit simulation: ${response}`);
     }
-    // console.log(response);
     return JSON.parse(response) as { id: string };
   });
   return rs.id;
