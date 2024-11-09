@@ -18,6 +18,11 @@ import {
 } from '@stacks/transactions';
 import { c32addressDecode } from 'c32check';
 
+function runTx(tx: StacksTransactionWire) {
+  // type 0: run transaction
+  return tupleCV({ type: uintCV(0), data: bufferCV(tx.serializeBytes()) });
+}
+
 export interface SimulationEval {
   contract_id: string;
   code: string;
