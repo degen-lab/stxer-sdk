@@ -11,21 +11,12 @@ import {
   makeUnsignedContractCall,
   makeUnsignedContractDeploy,
   makeUnsignedSTXTokenTransfer,
-  serializeCV,
   serializeCVBytes,
   stringAsciiCV,
   tupleCV,
   uintCV,
 } from '@stacks/transactions';
 import { c32addressDecode } from 'c32check';
-
-// current beta api endpoint
-const SIMULATION_API_ENDPOINT = 'https://api.stxer.xyz/simulations';
-
-function runTx(tx: StacksTransactionWire) {
-  // type 0: run transaction
-  return tupleCV({ type: uintCV(0), data: bufferCV(tx.serializeBytes()) });
-}
 
 export interface SimulationEval {
   contract_id: string;
@@ -49,6 +40,7 @@ export function runEval({ contract_id, code }: SimulationEval) {
 }
 
 export async function runSimulation(
+  apiEndpoint: string,
   block_hash: string,
   block_height: number,
   txs: (StacksTransactionWire | SimulationEval)[]
@@ -67,7 +59,7 @@ export async function runSimulation(
       .map((t) => serializeCVBytes(t)),
   ]);
   body.writeBigUInt64BE(BigInt(block_height), 6);
-  const rs = await fetch(SIMULATION_API_ENDPOINT, {
+  const rs = await fetch(apiEndpoint, {
     method: 'POST',
     body,
   }).then(async (rs) => {
@@ -81,10 +73,24 @@ export async function runSimulation(
   return rs.id;
 }
 
+interface SimulationBuilderOptions {
+  apiEndpoint?: string;
+  stacksNodeAPI?: string;
+}
+
 export class SimulationBuilder {
-  public static new() {
-    return new SimulationBuilder();
+  private apiEndpoint: string;
+  private stacksNodeAPI: string;
+
+  private constructor(options: SimulationBuilderOptions = {}) {
+    this.apiEndpoint = options.apiEndpoint ?? 'https://api.stxer.xyz/simulations';
+    this.stacksNodeAPI = options.stacksNodeAPI ?? 'https://api.hiro.so';
   }
+
+  public static new(options?: SimulationBuilderOptions) {
+    return new SimulationBuilder(options);
+  }
+
   // biome-ignore lint/style/useNumberNamespace: <explanation>
   private block = NaN;
   private sender = '';
@@ -201,11 +207,13 @@ export class SimulationBuilder {
 
   private async getBlockInfo() {
     if (Number.isNaN(this.block)) {
-      const { stacks_tip_height } = await getNodeInfo();
+      const { stacks_tip_height } = await getNodeInfo({
+        stacksEndpoint: this.stacksNodeAPI,
+      });
       this.block = stacks_tip_height;
     }
     const info: Block = await richFetch(
-      `https://api.hiro.so/extended/v1/block/by_height/${this.block}?unanchored=true`
+      `${this.stacksNodeAPI}/extended/v1/block/by_height/${this.block}?unanchored=true`
     ).then((r) => r.json());
     if (
       info.height !== this.block ||
@@ -244,7 +252,7 @@ To get in touch: contact@stxer.xyz
     const nextNonce = async (sender: string) => {
       const nonce = nonce_by_address.get(sender);
       if (nonce == null) {
-        const url = `https://api.hiro.so/v2/accounts/${sender}?proof=${false}&tip=${
+        const url = `${this.stacksNodeAPI}/v2/accounts/${sender}?proof=${false}&tip=${
           block.index_block_hash
         }`;
         const account: AccountDataResponse = await richFetch(url).then((r) =>
@@ -305,7 +313,12 @@ To get in touch: contact@stxer.xyz
         console.log(`Invalid simulation step:`, step);
       }
     }
-    const id = await runSimulation(block.block_hash, block.block_height, txs);
+    const id = await runSimulation(
+      this.apiEndpoint,
+      block.block_hash, 
+      block.block_height, 
+      txs
+    );
     console.log(
       `Simulation will be available at: https://stxer.xyz/simulations/mainnet/${id}`
     );
