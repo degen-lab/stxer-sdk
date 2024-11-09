@@ -239,10 +239,10 @@ To get in touch: contact@stxer.xyz
     console.log(
       `Using block height ${block.block_height} hash 0x${block.block_hash} to run simulation.`
     );
-    const txs: (StacksTransaction | SimulationEval)[] = [];
+    const txs: (StacksTransactionWire | SimulationEval)[] = [];
     const nonce_by_address = new Map<string, number>();
     const nextNonce = async (sender: string) => {
-      let nonce = nonce_by_address.get(sender);
+      const nonce = nonce_by_address.get(sender);
       if (nonce == null) {
         const url = `https://api.hiro.so/v2/accounts/${sender}?proof=${false}&tip=${
           block.index_block_hash

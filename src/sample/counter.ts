@@ -1,5 +1,5 @@
 import { uintCV } from "@stacks/transactions";
-import { SimulationBuilder } from "../src";
+import { SimulationBuilder } from "..";
 
 SimulationBuilder.new()
   .withSender('SP212Y5JKN59YP3GYG07K3S8W5SSGE4KH6B5STXER')
