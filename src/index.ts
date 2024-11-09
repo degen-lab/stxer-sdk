@@ -108,7 +108,7 @@ export class SimulationBuilder {
   private stacksNodeAPI: string;
 
   private constructor(options: SimulationBuilderOptions = {}) {
-    this.apiEndpoint = options.apiEndpoint ?? 'https://api.stxer.xyz/simulations';
+    this.apiEndpoint = options.apiEndpoint ?? 'https://api.stxer.xyz';
     this.stacksNodeAPI = options.stacksNodeAPI ?? 'https://api.hiro.so';
   }
 
@@ -339,7 +339,7 @@ To get in touch: contact@stxer.xyz
       }
     }
     const id = await runSimulation(
-      this.apiEndpoint,
+      `${this.apiEndpoint}/simulations`,
       block.block_hash, 
       block.block_height, 
       txs
