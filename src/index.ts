@@ -1,17 +1,18 @@
 import { type AccountDataResponse, getNodeInfo, richFetch } from 'ts-clarity';
 import type { Block } from '@stacks/stacks-blockchain-api-types';
-import { StacksMainnet } from '@stacks/network';
+import { STACKS_MAINNET } from '@stacks/network';
 import {
   AnchorMode,
   type ClarityValue,
   PostConditionMode,
-  type StacksTransaction,
+  type StacksTransactionWire,
   bufferCV,
   contractPrincipalCV,
   makeUnsignedContractCall,
   makeUnsignedContractDeploy,
   makeUnsignedSTXTokenTransfer,
   serializeCV,
+  serializeCVBytes,
   stringAsciiCV,
   tupleCV,
   uintCV,
@@ -21,9 +22,9 @@ import { c32addressDecode } from 'c32check';
 // current beta api endpoint
 const SIMULATION_API_ENDPOINT = 'https://api.stxer.xyz/simulations';
 
-function runTx(tx: StacksTransaction) {
+function runTx(tx: StacksTransactionWire) {
   // type 0: run transaction
-  return tupleCV({ type: uintCV(0), data: bufferCV(tx.serialize()) });
+  return tupleCV({ type: uintCV(0), data: bufferCV(tx.serializeBytes()) });
 }
 
 export interface SimulationEval {
@@ -37,7 +38,7 @@ export function runEval({ contract_id, code }: SimulationEval) {
   return tupleCV({
     type: uintCV(1),
     data: bufferCV(
-      serializeCV(
+      serializeCVBytes(
         tupleCV({
           contract: contractPrincipalCV(contract_address, contract_name),
           code: stringAsciiCV(code),
@@ -50,7 +51,7 @@ export function runEval({ contract_id, code }: SimulationEval) {
 export async function runSimulation(
   block_hash: string,
   block_height: number,
-  txs: (StacksTransaction | SimulationEval)[]
+  txs: (StacksTransactionWire | SimulationEval)[]
 ) {
   const body = Buffer.concat([
     Buffer.from('sim-v1'),
@@ -63,7 +64,7 @@ export async function runSimulation(
       .map((t) => {
         return 'contract_id' in t && 'code' in t ? runEval(t) : runTx(t);
       })
-      .map((t) => serializeCV(t)),
+      .map((t) => serializeCVBytes(t)),
   ]);
   body.writeBigUInt64BE(BigInt(block_height), 6);
   const rs = await fetch(SIMULATION_API_ENDPOINT, {
@@ -265,10 +266,9 @@ To get in touch: contact@stxer.xyz
           functionName: step.function_name,
           functionArgs: step.function_args ?? [],
           nonce,
-          network: new StacksMainnet(),
+          network: STACKS_MAINNET,
           publicKey: '',
           postConditionMode: PostConditionMode.Allow,
-          anchorMode: AnchorMode.Any,
           fee: step.fee,
         });
         tx.auth.spendingCondition.signer = c32addressDecode(step.sender)[1];
@@ -279,9 +279,8 @@ To get in touch: contact@stxer.xyz
           recipient: step.recipient,
           amount: step.amount,
           nonce,
-          network: new StacksMainnet(),
+          network: STACKS_MAINNET,
           publicKey: '',
-          anchorMode: AnchorMode.Any,
           fee: step.fee,
         });
         tx.auth.spendingCondition.signer = c32addressDecode(step.sender)[1];
@@ -292,10 +291,9 @@ To get in touch: contact@stxer.xyz
           contractName: step.contract_name,
           codeBody: step.source_code,
           nonce,
-          network: new StacksMainnet(),
+          network: STACKS_MAINNET,
           publicKey: '',
           postConditionMode: PostConditionMode.Allow,
-          anchorMode: AnchorMode.Any,
           fee: step.fee,
         });
         tx.auth.spendingCondition.signer = c32addressDecode(step.deployer)[1];
@@ -303,6 +301,7 @@ To get in touch: contact@stxer.xyz
       } else if ('code' in step) {
         txs.push(step);
       } else {
+        // biome-ignore lint/style/noUnusedTemplateLiteral: <explanation>
         console.log(`Invalid simulation step:`, step);
       }
     }
