@@ -1,6 +1,6 @@
 import { type AccountDataResponse, getNodeInfo, richFetch } from 'ts-clarity';
 import type { Block } from '@stacks/stacks-blockchain-api-types';
-import { STACKS_MAINNET } from '@stacks/network';
+import { networkFrom, STACKS_MAINNET, type StacksNetwork, type StacksNetworkName } from '@stacks/network';
 import {
   AnchorMode,
   type ClarityValue,
@@ -101,15 +101,18 @@ export async function runSimulation(
 interface SimulationBuilderOptions {
   apiEndpoint?: string;
   stacksNodeAPI?: string;
+  network?: StacksNetworkName;
 }
 
 export class SimulationBuilder {
   private apiEndpoint: string;
   private stacksNodeAPI: string;
+  private network: StacksNetworkName;
 
   private constructor(options: SimulationBuilderOptions = {}) {
     this.apiEndpoint = options.apiEndpoint ?? 'https://api.stxer.xyz';
     this.stacksNodeAPI = options.stacksNodeAPI ?? 'https://api.hiro.so';
+    this.network = options.network ?? 'mainnet';
   }
 
   public static new(options?: SimulationBuilderOptions) {
@@ -299,7 +302,7 @@ To get in touch: contact@stxer.xyz
           functionName: step.function_name,
           functionArgs: step.function_args ?? [],
           nonce,
-          network: STACKS_MAINNET,
+          network: networkFrom(this.network),
           publicKey: '',
           postConditionMode: PostConditionMode.Allow,
           fee: step.fee,
@@ -312,7 +315,7 @@ To get in touch: contact@stxer.xyz
           recipient: step.recipient,
           amount: step.amount,
           nonce,
-          network: STACKS_MAINNET,
+          network: networkFrom(this.network),
           publicKey: '',
           fee: step.fee,
         });
@@ -324,7 +327,7 @@ To get in touch: contact@stxer.xyz
           contractName: step.contract_name,
           codeBody: step.source_code,
           nonce,
-          network: STACKS_MAINNET,
+          network: networkFrom(this.network),
           publicKey: '',
           postConditionMode: PostConditionMode.Allow,
           fee: step.fee,
@@ -345,7 +348,7 @@ To get in touch: contact@stxer.xyz
       txs
     );
     console.log(
-      `Simulation will be available at: https://stxer.xyz/simulations/mainnet/${id}`
+      `Simulation will be available at: https://stxer.xyz/simulations/${this.network}/${id}`
     );
     return id;
   }
