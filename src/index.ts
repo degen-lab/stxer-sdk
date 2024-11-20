@@ -1,8 +1,10 @@
 import { type AccountDataResponse, getNodeInfo, richFetch } from 'ts-clarity';
 import type { Block } from '@stacks/stacks-blockchain-api-types';
-import { networkFrom, STACKS_MAINNET, type StacksNetwork, type StacksNetworkName } from '@stacks/network';
 import {
-  AnchorMode,
+  networkFrom,
+  type StacksNetworkName,
+} from '@stacks/network';
+import {
   type ClarityValue,
   ClarityVersion,
   PostConditionMode,
@@ -60,17 +62,24 @@ export async function runSimulation(
   view.setBigUint64(0, BigInt(block_height), false); // false for big-endian
 
   // Convert block hash to bytes
-  const hashHex = block_hash.startsWith('0x') ? block_hash.substring(2) : block_hash;
+  const hashHex = block_hash.startsWith('0x')
+    ? block_hash.substring(2)
+    : block_hash;
   // biome-ignore lint/style/noNonNullAssertion: <explanation>
-  const hashBytes = new Uint8Array(hashHex.match(/.{1,2}/g)!.map(byte => Number.parseInt(byte, 16)));
+  const hashBytes = new Uint8Array(
+    hashHex.match(/.{1,2}/g)!.map((byte) => Number.parseInt(byte, 16))
+  );
 
   // Convert transactions to bytes
   const txBytes = txs
-    .map((t) => 'contract_id' in t && 'code' in t ? runEval(t) : runTx(t))
+    .map((t) => ('contract_id' in t && 'code' in t ? runEval(t) : runTx(t)))
     .map((t) => serializeCVBytes(t));
 
   // Combine all byte arrays
-  const totalLength = header.length + heightBytes.length + hashBytes.length + 
+  const totalLength =
+    header.length +
+    heightBytes.length +
+    hashBytes.length +
     txBytes.reduce((acc, curr) => acc + curr.length, 0);
   const body = new Uint8Array(totalLength);
 
@@ -284,9 +293,9 @@ To get in touch: contact@stxer.xyz
     const nextNonce = async (sender: string) => {
       const nonce = nonce_by_address.get(sender);
       if (nonce == null) {
-        const url = `${this.stacksNodeAPI}/v2/accounts/${sender}?proof=${false}&tip=${
-          block.index_block_hash
-        }`;
+        const url = `${
+          this.stacksNodeAPI
+        }/v2/accounts/${sender}?proof=${false}&tip=${block.index_block_hash}`;
         const account: AccountDataResponse = await richFetch(url).then((r) =>
           r.json()
         );
@@ -347,8 +356,8 @@ To get in touch: contact@stxer.xyz
     }
     const id = await runSimulation(
       `${this.apiEndpoint}/simulations`,
-      block.block_hash, 
-      block.block_height, 
+      block.block_hash,
+      block.block_height,
       txs
     );
     console.log(
