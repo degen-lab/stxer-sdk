@@ -4,6 +4,7 @@ import { networkFrom, STACKS_MAINNET, type StacksNetwork, type StacksNetworkName
 import {
   AnchorMode,
   type ClarityValue,
+  ClarityVersion,
   PostConditionMode,
   type StacksTransactionWire,
   bufferCV,
@@ -137,6 +138,7 @@ export class SimulationBuilder {
         source_code: string;
         deployer: string;
         fee: number;
+        clarity_version: ClarityVersion;
       }
     | {
         // STX transfer
@@ -198,6 +200,7 @@ export class SimulationBuilder {
     source_code: string;
     deployer?: string;
     fee?: number;
+    clarity_version?: ClarityVersion;
   }) {
     if (params.deployer == null && this.sender === '') {
       throw new Error(
@@ -208,6 +211,7 @@ export class SimulationBuilder {
       ...params,
       deployer: params.deployer ?? this.sender,
       fee: params.fee ?? 0,
+      clarity_version: params.clarity_version ?? ClarityVersion.Clarity3,
     });
     return this;
   }
