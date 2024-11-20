@@ -2,6 +2,8 @@ import { type AccountDataResponse, getNodeInfo, richFetch } from 'ts-clarity';
 import type { Block } from '@stacks/stacks-blockchain-api-types';
 import {
   networkFrom,
+  STACKS_MAINNET,
+  STACKS_TESTNET,
   type StacksNetworkName,
 } from '@stacks/network';
 import {
@@ -111,13 +113,13 @@ export async function runSimulation(
 interface SimulationBuilderOptions {
   apiEndpoint?: string;
   stacksNodeAPI?: string;
-  network?: StacksNetworkName;
+  network?: StacksNetworkName | string;
 }
 
 export class SimulationBuilder {
   private apiEndpoint: string;
   private stacksNodeAPI: string;
-  private network: StacksNetworkName;
+  private network: StacksNetworkName | string;
 
   private constructor(options: SimulationBuilderOptions = {}) {
     this.apiEndpoint = options.apiEndpoint ?? 'https://api.stxer.xyz';
@@ -306,6 +308,16 @@ To get in touch: contact@stxer.xyz
       return nonce;
     };
     for (const step of this.steps) {
+      let network = this.network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
+      if (this.stacksNodeAPI) {
+        network = {
+          ...network,
+          client: {
+            ...network.client,
+            baseUrl: this.stacksNodeAPI,
+          },
+        };
+      }
       if ('sender' in step && 'function_name' in step) {
         const nonce = await nextNonce(step.sender);
         const [contractAddress, contractName] = step.contract_id.split('.');
@@ -315,7 +327,7 @@ To get in touch: contact@stxer.xyz
           functionName: step.function_name,
           functionArgs: step.function_args ?? [],
           nonce,
-          network: networkFrom(this.network),
+          network,
           publicKey: '',
           postConditionMode: PostConditionMode.Allow,
           fee: step.fee,
@@ -328,7 +340,7 @@ To get in touch: contact@stxer.xyz
           recipient: step.recipient,
           amount: step.amount,
           nonce,
-          network: networkFrom(this.network),
+          network,
           publicKey: '',
           fee: step.fee,
         });
@@ -340,7 +352,7 @@ To get in touch: contact@stxer.xyz
           contractName: step.contract_name,
           codeBody: step.source_code,
           nonce,
-          network: networkFrom(this.network),
+          network,
           publicKey: '',
           postConditionMode: PostConditionMode.Allow,
           fee: step.fee,
