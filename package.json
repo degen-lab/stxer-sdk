@@ -1,6 +1,6 @@
 {
   "name": "stxer",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "license": "MIT",
   "author": "Kyle Fang",
   "main": "dist/index.js",

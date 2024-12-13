@@ -67,9 +67,13 @@ export async function runSimulation(
   const hashHex = block_hash.startsWith('0x')
     ? block_hash.substring(2)
     : block_hash;
-  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  // Replace non-null assertion with null check
+  const matches = hashHex.match(/.{1,2}/g);
+  if (!matches) {
+    throw new Error('Invalid block hash format');
+  }
   const hashBytes = new Uint8Array(
-    hashHex.match(/.{1,2}/g)!.map((byte) => Number.parseInt(byte, 16))
+    matches.map((byte) => Number.parseInt(byte, 16))
   );
 
   // Convert transactions to bytes
@@ -376,5 +380,9 @@ To get in touch: contact@stxer.xyz
       `Simulation will be available at: https://stxer.xyz/simulations/${this.network}/${id}`
     );
     return id;
+  }
+
+  public pipe(transform: (builder: SimulationBuilder) => SimulationBuilder): SimulationBuilder {
+    return transform(this);
   }
 }
