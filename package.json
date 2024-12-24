@@ -1,6 +1,6 @@
 {
   "name": "stxer",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "license": "MIT",
   "author": "Kyle Fang",
   "main": "dist/index.js",
@@ -18,7 +18,8 @@
     "size": "size-limit",
     "start": "dts watch",
     "test": "dts test",
-    "sample": "tsx src/sample/counter.ts"
+    "sample:counter": "tsx src/sample/counter.ts",
+    "sample:read": "tsx src/sample/read.ts"
   },
   "husky": {
     "hooks": {
