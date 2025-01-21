@@ -12,6 +12,7 @@ import {
   type StacksTransactionWire,
   bufferCV,
   contractPrincipalCV,
+  deserializeTransaction,
   makeUnsignedContractCall,
   makeUnsignedContractDeploy,
   makeUnsignedSTXTokenTransfer,
@@ -139,28 +140,32 @@ export class SimulationBuilder {
   private sender = '';
   private steps: (
     | {
-        // contract call
-        contract_id: string;
-        function_name: string;
-        function_args?: ClarityValue[];
-        sender: string;
-        fee: number;
-      }
+      // inline simulation
+      simulationId: string;
+    }
     | {
-        // contract deploy
-        contract_name: string;
-        source_code: string;
-        deployer: string;
-        fee: number;
-        clarity_version: ClarityVersion;
-      }
+      // contract call
+      contract_id: string;
+      function_name: string;
+      function_args?: ClarityValue[];
+      sender: string;
+      fee: number;
+    }
     | {
-        // STX transfer
-        recipient: string;
-        amount: number;
-        sender: string;
-        fee: number;
-      }
+      // contract deploy
+      contract_name: string;
+      source_code: string;
+      deployer: string;
+      fee: number;
+      clarity_version: ClarityVersion;
+    }
+    | {
+      // STX transfer
+      recipient: string;
+      amount: number;
+      sender: string;
+      fee: number;
+    }
     | SimulationEval
   )[] = [];
 
@@ -170,6 +175,12 @@ export class SimulationBuilder {
   }
   public withSender(address: string) {
     this.sender = address;
+    return this;
+  }
+  public inlineSimulation(simulationId: string) {
+    this.steps.push({
+      simulationId,
+    })
     return this;
   }
   public addSTXTransfer(params: {
@@ -298,9 +309,8 @@ To get in touch: contact@stxer.xyz
     const nextNonce = async (sender: string) => {
       const nonce = nonce_by_address.get(sender);
       if (nonce == null) {
-        const url = `${
-          this.stacksNodeAPI
-        }/v2/accounts/${sender}?proof=${false}&tip=${block.index_block_hash}`;
+        const url = `${this.stacksNodeAPI
+          }/v2/accounts/${sender}?proof=${false}&tip=${block.index_block_hash}`;
         const account: AccountDataResponse = await richFetch(url).then((r) =>
           r.json()
         );
@@ -310,18 +320,30 @@ To get in touch: contact@stxer.xyz
       nonce_by_address.set(sender, nonce + 1);
       return nonce;
     };
+    let network = this.network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
+    if (this.stacksNodeAPI) {
+      network = {
+        ...network,
+        client: {
+          ...network.client,
+          baseUrl: this.stacksNodeAPI,
+        },
+      };
+    }
     for (const step of this.steps) {
-      let network = this.network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
-      if (this.stacksNodeAPI) {
-        network = {
-          ...network,
-          client: {
-            ...network.client,
-            baseUrl: this.stacksNodeAPI,
-          },
-        };
-      }
-      if ('sender' in step && 'function_name' in step) {
+      if ('simulationId' in step) {
+        const previousSimulation: {steps: ({tx: string} | {code: string, contract: string})[]} = await fetch(`https://api.stxer.xyz/simulations/${step.simulationId}/request`).then(x => x.json())
+        for (const step of previousSimulation.steps) {
+          if ('tx' in step) {
+            txs.push(deserializeTransaction(step.tx));
+          } else if ('code' in step && 'contract' in step) {
+            txs.push({
+              contract_id: step.contract,
+              code: step.code,
+            });
+          }
+        }
+      } else if ('sender' in step && 'function_name' in step) {
         const nonce = await nextNonce(step.sender);
         const [contractAddress, contractName] = step.contract_id.split('.');
         const tx = await makeUnsignedContractCall({

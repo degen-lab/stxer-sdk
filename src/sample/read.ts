@@ -121,5 +121,7 @@ import {
     await batchReadonlyExample();
   }
   
-  main().catch(console.error);
+  if (require.main === module) {
+    main().catch(console.error);
+  }
   
