@@ -3,6 +3,10 @@
   "version": "0.3.1",
   "license": "MIT",
   "author": "Kyle Fang",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stxer/stxer-sdk"
+  },
   "main": "dist/index.js",
   "module": "dist/stxer.esm.js",
   "typings": "dist/index.d.ts",
