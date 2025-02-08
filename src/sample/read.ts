@@ -118,7 +118,7 @@ import {
   
   async function main() {
     await batchReadsExample();
-    await batchReadonlyExample();
+    // await batchReadonlyExample();
   }
   
   if (require.main === module) {
