@@ -83,55 +83,35 @@ const processor = new BatchProcessor({
 
 // Queue multiple operations that will be batched together
 const [resultA, resultB] = await Promise.all([
-  new Promise((resolve, reject) => {
-    processor.enqueue({
-      request: {
-        mode: 'variable',
-        contractAddress: 'SP...',
-        contractName: 'my-contract',
-        variableName: 'variable-a'
-      },
-      resolve,
-      reject
-    });
+  processor.read({
+    mode: 'variable',
+    contractAddress: 'SP...',
+    contractName: 'my-contract',
+    variableName: 'variable-a'
   }),
-  new Promise((resolve, reject) => {
-    processor.enqueue({
-      request: {
-        mode: 'variable',
-        contractAddress: 'SP...',
-        contractName: 'my-contract',
-        variableName: 'variable-b'
-      },
-      resolve,
-      reject
-    });
+  processor.read({
+    mode: 'variable',
+    contractAddress: 'SP...',
+    contractName: 'my-contract',
+    variableName: 'variable-b'
   })
 ]);
 
 // You can also queue different types of operations
-processor.enqueue({
-  request: {
-    mode: 'readonly',
-    contractAddress: 'SP...',
-    contractName: 'my-contract',
-    functionName: 'get-value',
-    functionArgs: []
-  },
-  resolve: (value) => console.log('Function result:', value),
-  reject: (error) => console.error('Error:', error)
+processor.read({
+  mode: 'readonly',
+  contractAddress: 'SP...',
+  contractName: 'my-contract',
+  functionName: 'get-value',
+  functionArgs: []
 });
 
-processor.enqueue({
-  request: {
-    mode: 'mapEntry',
-    contractAddress: 'SP...',
-    contractName: 'my-contract',
-    mapName: 'my-map',
-    mapKey: someKey
-  },
-  resolve: (value) => console.log('Map entry:', value),
-  reject: (error) => console.error('Error:', error)
+processor.read({
+  mode: 'mapEntry',
+  contractAddress: 'SP...',
+  contractName: 'my-contract',
+  mapName: 'my-map',
+  mapKey: someKey
 });
 ```
 

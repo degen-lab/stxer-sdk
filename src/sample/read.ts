@@ -82,65 +82,23 @@ async function batchQueueProcessorExample() {
   });
 
 
-  const promiseA = new Promise((resolve, reject) => {
-    processor.enqueue({
-      request: {
-        mode: 'variable',
-        contractAddress: 'SP1Z92MPDQEWZXW36VX71Q25HKF5K2EPCJ304F275',
-        contractName: 'liquidity-token-v5kbe3oqvac',
-        variableName: 'balance-x',
-      },
-      resolve: resolve,
-      reject: reject,
-    });
+  const promiseA = processor.read({
+    mode: 'variable',
+    contractAddress: 'SP1Z92MPDQEWZXW36VX71Q25HKF5K2EPCJ304F275',
+    contractName: 'liquidity-token-v5kbe3oqvac',
+    variableName: 'balance-x',
   });
 
-  const promiseB = new Promise((resolve, reject) => {
-    processor.enqueue({
-      request: {
-        mode: 'variable',
-        contractAddress: 'SP1Z92MPDQEWZXW36VX71Q25HKF5K2EPCJ304F275',
-        contractName: 'liquidity-token-v5kbe3oqvac',
-        variableName: 'balance-y',
-      },
-      resolve: resolve,
-      reject: reject,
-    });
+  const promiseB = processor.read({
+    mode: 'variable',
+    contractAddress: 'SP1Z92MPDQEWZXW36VX71Q25HKF5K2EPCJ304F275',
+    contractName: 'liquidity-token-v5kbe3oqvac',
+    variableName: 'balance-y',
   });
 
   const result = await Promise.all([promiseA, promiseB]);
   console.log(result);
 }
-
-// https://explorer.hiro.so/txid/SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.trait-sip-010
-const sip010 = {
-  functions: [
-    {
-      name: 'get-balance',
-      access: 'read_only',
-      args: [
-        {
-          name: 'who',
-          type: 'principal',
-        },
-      ],
-      outputs: {
-        type: {
-          response: {
-            ok: 'uint128',
-            error: 'none',
-          },
-        },
-      },
-    },
-  ],
-  variables: [],
-  maps: [],
-  fungible_tokens: [],
-  non_fungible_tokens: [],
-  epoch: 'Epoch2_05',
-  clarity_version: 'Clarity1',
-} as const;
 
 async function batchSip010Example() {
   const supply = callReadonly({

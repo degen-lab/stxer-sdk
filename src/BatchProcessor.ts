@@ -60,6 +60,12 @@ export class BatchProcessor {
     return tip ?? '_undefined';
   }
 
+  read(request: BatchRequest): Promise<ClarityValue | OptionalCV> {
+    return new Promise((resolve, reject) => {
+      this.enqueue({ request, resolve, reject });
+    });
+  }
+
   enqueue(request: QueuedRequest): void {
     const queueKey = this.getQueueKey(request.tip);
 
