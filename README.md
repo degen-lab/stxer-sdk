@@ -143,6 +143,40 @@ The BatchProcessor automatically:
 
 This is particularly useful when you need to make multiple blockchain reads and want to optimize network calls.
 
+### 3. Clarity API Utilities
+
+The SDK provides convenient utilities for reading data from Clarity contracts:
+
+```typescript
+import { callReadonly, readVariable, readMap } from 'stxer';
+import { SIP010TraitABI } from 'clarity-abi/abis';
+import { unwrapResponse } from 'ts-clarity';
+
+// Read from a contract function
+const supply = await callReadonly({
+  abi: SIP010TraitABI.functions,
+  functionName: 'get-total-supply',
+  contract: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.token-alex',
+}).then(unwrapResponse);
+
+// Read a contract variable
+const paused = await readVariable({
+  abi: [{ name: 'paused', type: 'bool', access: 'variable' }],
+  variableName: 'paused',
+  contract: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.amm-vault-v2-01',
+});
+
+// Read from a contract map
+const approved = await readMap({
+  abi: [{ key: 'principal', name: 'approved-tokens', value: 'bool' }],
+  mapName: 'approved-tokens',
+  key: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.token-alex',
+  contract: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.amm-vault-v2-01',
+});
+```
+
+These utilities provide type-safe ways to interact with Clarity contracts, with built-in ABI support and response unwrapping.
+
 ## Configuration
 
 You can customize the API endpoints:

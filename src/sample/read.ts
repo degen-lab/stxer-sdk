@@ -1,12 +1,14 @@
 import {
   contractPrincipalCV,
   principalCV,
-  stringAsciiCV,
   tupleCV,
   uintCV,
 } from '@stacks/transactions';
+import { SIP010TraitABI } from 'clarity-abi/abis'
 import { batchRead } from '../BatchAPI';
 import { BatchProcessor } from '../BatchProcessor';
+import { callReadonly, readMap, readVariable } from '../clarity-api';
+import { unwrapResponse } from 'ts-clarity';
 
 async function batchReadsExample() {
   const rs = await batchRead({
@@ -110,9 +112,71 @@ async function batchQueueProcessorExample() {
   console.log(result);
 }
 
+// https://explorer.hiro.so/txid/SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.trait-sip-010
+const sip010 = {
+  functions: [
+    {
+      name: 'get-balance',
+      access: 'read_only',
+      args: [
+        {
+          name: 'who',
+          type: 'principal',
+        },
+      ],
+      outputs: {
+        type: {
+          response: {
+            ok: 'uint128',
+            error: 'none',
+          },
+        },
+      },
+    },
+  ],
+  variables: [],
+  maps: [],
+  fungible_tokens: [],
+  non_fungible_tokens: [],
+  epoch: 'Epoch2_05',
+  clarity_version: 'Clarity1',
+} as const;
+
+async function batchSip010Example() {
+  const supply = callReadonly({
+    abi: SIP010TraitABI.functions,
+    functionName: 'get-total-supply',
+    contract: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.token-alex',
+  }).then(unwrapResponse)
+  const balance = callReadonly({
+    abi: SIP010TraitABI.functions,
+    functionName: 'get-balance',
+    contract: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.token-alex',
+    args: {
+      who: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.amm-vault-v2-01',
+    },
+  }).then(unwrapResponse)
+  const paused = readVariable({
+    abi: [{ name: 'paused', type: 'bool', access: 'variable' },],
+    variableName: 'paused',
+    contract: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.amm-vault-v2-01',
+  });
+  const approved = readMap({
+    abi: [
+      { key: 'principal', name: 'approved-tokens', value: 'bool' }, 
+    ],
+    mapName: 'approved-tokens',
+    key: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.token-alex',
+    contract: 'SP102V8P0F7JX67ARQ77WEA3D3CFB5XW39REDT0AM.amm-vault-v2-01',
+  })
+  const result = await Promise.all([supply, balance, paused, approved]);
+  console.log(result);
+}
+
 async function main() {
   await batchReadsExample();
   await batchQueueProcessorExample();
+  await batchSip010Example();
 }
 
 if (require.main === module) {
