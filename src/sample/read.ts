@@ -5,7 +5,8 @@ import {
   tupleCV,
   uintCV,
 } from '@stacks/transactions';
-import { batchRead } from '../batch-api';
+import { batchRead } from '../BatchAPI';
+import { BatchProcessor } from '../BatchProcessor';
 
 async function batchReadsExample() {
   const rs = await batchRead({
@@ -72,9 +73,46 @@ async function batchReadsExample() {
   console.log(rs);
 }
 
+async function batchQueueProcessorExample() {
+  const processor = new BatchProcessor({
+    stxerAPIEndpoint: 'https://api.stxer.xyz',
+    batchDelayMs: 1000,
+  });
+
+
+  const promiseA = new Promise((resolve, reject) => {
+    processor.enqueue({
+      request: {
+        mode: 'variable',
+        contractAddress: 'SP1Z92MPDQEWZXW36VX71Q25HKF5K2EPCJ304F275',
+        contractName: 'liquidity-token-v5kbe3oqvac',
+        variableName: 'balance-x',
+      },
+      resolve: resolve,
+      reject: reject,
+    });
+  });
+
+  const promiseB = new Promise((resolve, reject) => {
+    processor.enqueue({
+      request: {
+        mode: 'variable',
+        contractAddress: 'SP1Z92MPDQEWZXW36VX71Q25HKF5K2EPCJ304F275',
+        contractName: 'liquidity-token-v5kbe3oqvac',
+        variableName: 'balance-y',
+      },
+      resolve: resolve,
+      reject: reject,
+    });
+  });
+
+  const result = await Promise.all([promiseA, promiseB]);
+  console.log(result);
+}
+
 async function main() {
   await batchReadsExample();
-  // await batchReadonlyExample();
+  await batchQueueProcessorExample();
 }
 
 if (require.main === module) {

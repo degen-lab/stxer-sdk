@@ -1,2 +1,2 @@
-export * from './batch-api';
+export * from './BatchAPI';
 export * from './simulation';
