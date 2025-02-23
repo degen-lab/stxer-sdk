@@ -9,7 +9,6 @@ import {
   type ClarityValue,
   type ContractPrincipalCV,
   deserializeCV,
-  type OptionalCV,
   serializeCV,
 } from '@stacks/transactions';
 
@@ -133,56 +132,4 @@ export async function batchRead(
     maps: convertResults(rs.maps),
     readonly: convertResults(rs.readonly),
   };
-}
-
-export interface BatchReadonlyRequest {
-  readonly: {
-    contract: ContractPrincipalCV;
-    functionName: string;
-    functionArgs: ClarityValue[];
-  }[];
-  index_block_hash?: string;
-}
-
-export async function batchReadonly(
-  req: BatchReadonlyRequest,
-  options: BatchApiOptions = {}
-): Promise<(ClarityValue | Error)[]> {
-  const payload = req.readonly.map((r) => [
-    serializeCV(r.contract),
-    r.functionName,
-    ...r.functionArgs.map((arg) => serializeCV(arg)),
-  ]);
-
-  const ibh =
-    req.index_block_hash == null
-      ? null
-      : req.index_block_hash.startsWith('0x')
-        ? req.index_block_hash.substring(2)
-        : req.index_block_hash;
-
-  const url = `${options.stxerApi ?? DEFAULT_STXER_API}/sidecar/v2/batch-readonly${ibh == null ? '' : `?tip=${ibh}`
-    }`;
-  const data = await fetch(url, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-  const text = await data.text();
-  if (!text.includes('Ok') && !text.includes('Err')) {
-    throw new Error(
-      `Requesting batch readonly failed: ${text}, url: ${url}, payload: ${JSON.stringify(
-        payload
-      )}`
-    );
-  }
-  const results = JSON.parse(text) as [{ Ok: string } | { Err: string }];
-  const rs: (ClarityValue | Error)[] = [];
-  for (const result of results) {
-    if ('Ok' in result) {
-      rs.push(deserializeCV(result.Ok));
-    } else {
-      rs.push(new Error(result.Err));
-    }
-  }
-  return rs;
 }

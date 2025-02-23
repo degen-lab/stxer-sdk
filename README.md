@@ -29,11 +29,7 @@ const result = await batchRead({
     contract: contractPrincipalCV(...),
     mapName: 'my-map',
     mapKey: someCV
-  }]
-});
-
-// Batch readonly function calls
-const readonlyResult = await batchReadonly({
+  }],
   readonly: [{
     contract: contractPrincipalCV(...),
     functionName: 'my-function',

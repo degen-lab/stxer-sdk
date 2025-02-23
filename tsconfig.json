@@ -5,6 +5,7 @@
     "module": "esnext",
     "allowImportingTsExtensions": false,
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "noEmit": true
   }
 }
